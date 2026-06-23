@@ -1,0 +1,23 @@
+STEP 1 Create Next.js Frontend
+
+STEP 2 Create Express Backend
+
+STEP 3 Connect MongoDB Database
+
+STEP 4 Build Home Page
+
+STEP 5 Build Menu Page
+
+STEP 6 Build Booking System
+
+STEP 7 Build Contact System
+
+STEP 8 Create Admin Dashboard
+
+STEP 9 Integrate Groq AI Recommendation
+
+STEP 10 Build ML Occupancy Prediction
+
+STEP 11 Testing
+
+STEP 12 Project Submission
