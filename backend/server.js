@@ -1,18 +1,27 @@
 require("dotenv").config();
 
+console.log("GROQ =", process.env.GROQ_API_KEY);
+console.log("MONGO =", process.env.MONGO_URI);
+
 const mongoose = require("mongoose");
 const Booking = require("./models/Booking");
 const Order = require("./models/Order");
 const Contact = require("./models/Contact");
-
 const express = require("express");
 const cors = require("cors");
 
-const app = express();
+const app = express();   // ✅
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
+
+app.use(express.json());
 const recommendationRoutes = require("./routes/recommendation");
 const adminRoutes = require("./routes/admin");
-app.use(cors());
-app.use(express.json());
 app.use("/api/recommendation", recommendationRoutes);
 app.use("/admin", adminRoutes);
 

@@ -12,7 +12,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/admin/login",
+        "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/admin/login",
         {
           method: "POST",
           headers: {

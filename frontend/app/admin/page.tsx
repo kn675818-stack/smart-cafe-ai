@@ -20,7 +20,7 @@ export default function AdminPage() {
   // Fetch bookings
   const fetchBookings = async () => {
     try {
-      const res = await fetch("http://localhost:5000/bookings");
+      const res = await fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/bookings");
       const data = await res.json();
       setBookings(data);
     } catch (error) {
@@ -30,7 +30,7 @@ export default function AdminPage() {
 
   const fetchOrders = async () => {
   try {
-    const res = await fetch("http://localhost:5000/orders");
+    const res = await fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/orders");
     const data = await res.json();
     setOrders(data);
   } catch (error) {
@@ -40,7 +40,7 @@ export default function AdminPage() {
 
 const deleteOrder = async (id: string) => {
   try {
-    await fetch(`http://localhost:5000/order/${id}`, {
+    await fetch(`https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/order/${id}`, {
       method: "DELETE",
     });
 
@@ -51,7 +51,7 @@ const deleteOrder = async (id: string) => {
 };
 const fetchContacts = async () => {
   try {
-    const res = await fetch("http://localhost:5000/contacts");
+    const res = await fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/contacts");
     const data = await res.json();
     setContacts(data);
   } catch (error) {
@@ -60,7 +60,7 @@ const fetchContacts = async () => {
 };
 const deleteContact = async (id: string) => {
   try {
-    await fetch(`http://localhost:5000/contact/${id}`, {
+    await fetch(`https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/contact/${id}`, {
       method: "DELETE",
     });
 
@@ -73,7 +73,7 @@ const deleteContact = async (id: string) => {
   // Delete booking
   const deleteBooking = async (id: string) => {
     try {
-      await fetch(`http://localhost:5000/booking/${id}`, {
+      await fetch(`https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/booking/${id}`, {
         method: "DELETE",
       });
 
@@ -126,7 +126,7 @@ const deleteContact = async (id: string) => {
   fetchOrders();
   fetchContacts();
   const fetchPrediction = async () => {
-  const res = await fetch("http://localhost:5000/prediction");
+  const res = await fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/prediction");
   const data = await res.json();
   setPrediction(data);
 };

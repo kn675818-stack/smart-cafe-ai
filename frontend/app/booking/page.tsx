@@ -30,7 +30,7 @@ export default function BookingPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/booking",
+        "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/booking",
         {
           method: "POST",
           headers: {

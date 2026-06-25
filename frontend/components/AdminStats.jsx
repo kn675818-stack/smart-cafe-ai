@@ -6,7 +6,7 @@ export default function AdminStats() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/admin/stats")
+    fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/admin/stats")
       .then((res) => res.json())
       .then((data) => setStats(data))
       .catch((err) => console.log(err));

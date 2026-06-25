@@ -8,7 +8,7 @@ export default function CoffeeRecommendation() {
 
   const getRecommendation = async () => {
     const res = await fetch(
-      "http://localhost:5000/api/recommendation",
+      "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/api/recommendation",
       {
         method: "POST",
         headers: {

@@ -6,25 +6,24 @@ export default function AvailableSeats() {
   const [seats, setSeats] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/available-seats")
-      .then((res) => res.json())
-      .then((data) => {
+    console.log("Fetching seats...");
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/available-seats`)
+      .then(async (res) => {
+        console.log("Status:", res.status);
+        const data = await res.json();
+        console.log("Response:", data);
         setSeats(data.availableSeats);
       })
       .catch((err) => {
-        console.error(err);
+        console.error("FETCH ERROR:", err);
       });
   }, []);
 
   return (
-    <div className="mt-10 bg-zinc-900 p-6 rounded-xl border border-zinc-700">
-      <h2 className="text-2xl font-bold text-amber-400 mb-2">
-        Available Seats
-      </h2>
-
-      <p className="text-4xl font-bold">
-        {seats === null ? "Loading..." : seats}
-      </p>
+    <div>
+      <h2>Available Seats</h2>
+      <p>{seats === null ? "Loading..." : seats}</p>
     </div>
   );
 }

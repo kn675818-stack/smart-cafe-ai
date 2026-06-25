@@ -37,7 +37,7 @@ export default function Menu() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/order", {
+    const res = await fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/order", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

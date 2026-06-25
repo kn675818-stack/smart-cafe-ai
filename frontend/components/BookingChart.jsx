@@ -17,7 +17,7 @@ export default function BookingChart() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:5000/admin/stats")
+    fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/admin/stats")
       .then((res) => res.json())
       .then((data) => {
         console.log("Chart Data:", data);

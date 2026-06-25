@@ -17,7 +17,7 @@ export default function ContactPage() {
 
     try {
       const res = await fetch(
-        "http://localhost:5000/contact",
+        "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/contact",
         {
           method: "POST",
           headers: {
