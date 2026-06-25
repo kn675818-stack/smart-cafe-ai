@@ -12,7 +12,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       const res = await fetch(
-        "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/admin/login",
+        "https://smart-cafe-ai-1.onrender.com/admin/login",
         {
           method: "POST",
           headers: {

@@ -165,7 +165,7 @@ const placeOrder = async () => {
   }
 
   try {
-    const res = await fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/order", {
+    const res = await fetch("https://smart-cafe-ai-1.onrender.com/order", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",

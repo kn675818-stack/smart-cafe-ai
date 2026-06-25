@@ -17,7 +17,7 @@ export default function ContactPage() {
 
     try {
       const res = await fetch(
-        "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/contact",
+        "https://smart-cafe-ai-1.onrender.com/contact",
         {
           method: "POST",
           headers: {

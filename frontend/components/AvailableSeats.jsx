@@ -6,7 +6,7 @@ export default function AvailableSeats() {
   const [seats, setSeats] = useState(null);
 
   useEffect(() => {
-    fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/available-seats")
+    fetch("https://smart-cafe-ai-1.onrender.com/available-seats")
       .then((res) => res.json())
       .then((data) => setSeats(data.availableSeats))
       .catch((err) => console.log(err));

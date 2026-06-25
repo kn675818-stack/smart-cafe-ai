@@ -8,7 +8,7 @@ export default function CoffeeRecommendation() {
 
   const getRecommendation = async () => {
     const res = await fetch(
-      "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/api/recommendation",
+      "https://smart-cafe-ai-1.onrender.com/api/recommendation",
       {
         method: "POST",
         headers: {

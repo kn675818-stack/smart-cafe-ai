@@ -6,7 +6,7 @@ export default function AdminStats() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch("https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/admin/stats")
+    fetch("https://smart-cafe-ai-1.onrender.com/admin/stats")
       .then((res) => res.json())
       .then((data) => setStats(data))
       .catch((err) => console.log(err));

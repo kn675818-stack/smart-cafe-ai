@@ -30,7 +30,7 @@ export default function BookingPage() {
 
     try {
       const response = await fetch(
-        "https://probable-couscous-6vj759wjwqc44rw-5000.app.github.dev/booking",
+        "https://smart-cafe-ai-1.onrender.com/booking",
         {
           method: "POST",
           headers: {
