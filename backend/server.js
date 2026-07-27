@@ -1,16 +1,28 @@
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 require("dotenv").config();
 
+console.log("MONGO_URI =", process.env.MONGO_URI);
 console.log("GROQ =", process.env.GROQ_API_KEY);
-console.log("MONGO =", process.env.MONGO_URI);
 
-const mongoose = require("mongoose");
+const connectDB = require("./config/db");
+
 const Booking = require("./models/Booking");
 const Order = require("./models/Order");
 const Contact = require("./models/Contact");
+
 const express = require("express");
 const cors = require("cors");
 
-const app = express();   // ✅
+const app = express();
+
+const recommendationRoutes = require("./routes/recommendation");
+const adminRoutes = require("./routes/admin");
+const bookingRoutes = require("./routes/bookingRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const contactRoutes = require("./routes/contactRoutes");
 
 app.use(
   cors({
@@ -20,68 +32,19 @@ app.use(
 );
 
 app.use(express.json());
-const recommendationRoutes = require("./routes/recommendation");
-const adminRoutes = require("./routes/admin");
+
 app.use("/api/recommendation", recommendationRoutes);
 app.use("/admin", adminRoutes);
 
+app.use(bookingRoutes);
+app.use(orderRoutes);
+app.use("/contacts", contactRoutes);
+
 // Home Route
 app.get("/", (req, res) => {
-res.send("SmartCafe Backend Running 🚀");
+  res.send("SmartCafe Backend Running 🚀");
 });
 
-// Create Booking
-app.post("/booking", async (req, res) => {
-  try {
-    console.log("Received Booking:", req.body);
-
-   const {
-  name,
-  mobile,
-  email,
-  date,
-  time,
-  seats,
-} = req.body;
-
-const booking = new Booking({
-  name,
-  mobile,
-  email,
-  date,
-  time,
-  seats,
-});
-
-    const savedBooking = await booking.save();
-
-    console.log("Saved Booking:", savedBooking);
-
-    res.json({
-      success: true,
-      booking: savedBooking,
-    });
-  } catch (error) {
-    console.log("BOOKING ERROR:", error);
-
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-});
-
-// Get All Bookings
-app.get("/bookings", async (req, res) => {
-  try {
-    const bookings = await Booking.find();
-
-    res.json(bookings);
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-});
 // Available Seats
 app.get("/available-seats", async (req, res) => {
   try {
@@ -136,75 +99,6 @@ app.get("/admin/stats", async (req, res) => {
     });
   }
 });
-// Delete Booking
-app.delete("/booking/:id", async (req, res) => {
-  try {
-    await Booking.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Booking Deleted",
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-});
-
-// Create Order
-app.post("/order", async (req, res) => {
-  try {
-    const order = new Order(req.body);
-    await order.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Order Saved",
-      order,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-// Get All Orders
-app.get("/orders", async (req, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-console.log("MONGO_URI =", process.env.MONGO_URI);
-
-// Delete Order
-app.delete("/order/:id", async (req, res) => {
-  try {
-    await Order.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Order Deleted",
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-});
-mongoose
-.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected ✅"))
-.catch((err) => console.log("MongoDB Error:", err));
 
 // Save Contact Message
 app.post("/contact", async (req, res) => {
@@ -256,6 +150,7 @@ app.delete("/contact/:id", async (req, res) => {
     });
   }
 });
+
 // AI Occupancy Prediction
 app.get("/prediction", async (req, res) => {
   try {
@@ -281,7 +176,10 @@ app.get("/prediction", async (req, res) => {
     });
   }
 });
+
 const PORT = process.env.PORT || 5000;
+
+connectDB();
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
