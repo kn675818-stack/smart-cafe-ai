@@ -68,7 +68,7 @@ export default function CheckoutPage() {
 
     try {
       const res = await fetch(
-        "http://localhost:5000/order",
+  "https://smart-cafe-backend-ypf8.onrender.com/order",
         {
           method: "POST",
           headers: {

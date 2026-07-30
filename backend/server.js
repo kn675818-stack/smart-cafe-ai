@@ -181,6 +181,12 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
+const mongoose = require("mongoose");
+
+setInterval(() => {
+  console.log("Mongo Ready State:", mongoose.connection.readyState);
+}, 5000);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
