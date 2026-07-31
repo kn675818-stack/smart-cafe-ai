@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch(`${API_URL}/order`, {
+      const res = await fetch(`${API_URL}/admin/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
