@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_URL } from "@/lib/api";
+
 
 export default function AvailableSeats() {
   const [seats, setSeats] = useState(null);
 
   useEffect(() => {
-    fetch("https://smart-cafe-ai-1.onrender.com/available-seats")
+   fetch(`${API_URL}/available-seats`)
       .then((res) => res.json())
       .then((data) => setSeats(data.availableSeats))
       .catch((err) => console.log(err));

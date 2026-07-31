@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_URL } from "@/lib/api";
 import {
   BarChart,
   Bar,
@@ -17,7 +18,7 @@ export default function BookingChart() {
   });
 
   useEffect(() => {
-    fetch("https://smart-cafe-ai-1.onrender.com/admin/stats")
+    fetch(`${API_URL}/admin/stats`)
       .then((res) => res.json())
       .then((data) => {
         console.log("Chart Data:", data);

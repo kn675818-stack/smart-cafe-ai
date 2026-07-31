@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function CoffeeRecommendation() {
   const [mood, setMood] = useState("");
   const [coffee, setCoffee] = useState("");
 
   const getRecommendation = async () => {
-    const res = await fetch(
-      "https://smart-cafe-ai-1.onrender.com/api/recommendation",
-      {
+    const res = await fetch(`${API_URL}/api/recommendation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

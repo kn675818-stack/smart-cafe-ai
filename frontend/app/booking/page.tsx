@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Navbar from "../components/Navbar";
+import { API_URL } from "@/lib/api";
 
 export default function BookingPage() {
   const [formData, setFormData] = useState({
@@ -27,21 +28,18 @@ export default function BookingPage() {
     e: React.FormEvent
   ) => {
     e.preventDefault();
+  
+    
+   try {
+  const response = await fetch(`${API_URL}/booking`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  });
 
-    try {
-      const response = await fetch(
-        "https://smart-cafe-ai-1.onrender.com/booking",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      const data = await response.json();
+  const data = await response.json();
 
       alert(
         `Booking Confirmed ✅\n\nName: ${formData.name}\nSeats: ${formData.seats}\nTime: ${formData.time}`

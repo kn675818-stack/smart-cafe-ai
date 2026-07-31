@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/api";
 
 type CartItem = {
   name: string;
@@ -67,9 +68,8 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-  "https://smart-cafe-backend-ypf8.onrender.com/order",
-        {
+       const res = await fetch(`${API_URL}/order`, {
+        
           method: "POST",
           headers: {
             "Content-Type": "application/json",

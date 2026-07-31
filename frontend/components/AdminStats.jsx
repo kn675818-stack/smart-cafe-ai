@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_URL } from "@/lib/api";
+
 
 export default function AdminStats() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch("https://smart-cafe-ai-1.onrender.com/admin/stats")
+    fetch(`${API_URL}/admin/stats`)
       .then((res) => res.json())
       .then((data) => setStats(data))
       .catch((err) => console.log(err));

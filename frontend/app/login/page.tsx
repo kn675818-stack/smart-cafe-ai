@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,9 +12,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch(
-        "https://smart-cafe-ai-1.onrender.com/admin/login",
-        {
+      const res = await fetch(`${API_URL}/order`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

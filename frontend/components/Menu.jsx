@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 const menuItems = [
   {
@@ -37,7 +38,7 @@ export default function Menu() {
   }
 
   try {
-    const res = await fetch("https://smart-cafe-ai-1.onrender.com/order", {
+   const res = await fetch(`${API_URL}/order`,  {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

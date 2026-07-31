@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Navbar from "../components/Navbar";
+import { API_URL } from "@/lib/api";
 
 export default function ContactPage() {
   const [form, setForm] = useState({
@@ -16,9 +17,8 @@ export default function ContactPage() {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        "https://smart-cafe-ai-1.onrender.com/contact",
-        {
+      const res = await fetch(`${API_URL}/order`, {
+        
           method: "POST",
           headers: {
             "Content-Type": "application/json",
