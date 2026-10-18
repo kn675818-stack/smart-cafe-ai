@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BookingChart from "../../components/BookingChart";
 import { saveAs } from "file-saver";
+
 import {
   Coffee,
   CalendarDays,
@@ -17,7 +18,6 @@ import {
 } from "lucide-react";
 
 import { API_URL } from "@/lib/api";
-
 
 interface Prediction {
   expectedSeats: number;
@@ -56,6 +56,8 @@ interface Contact {
   message: string;
 }
 
+const TOTAL_SEATS = 50;
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -73,66 +75,285 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  // =========================
-  // FETCH ALL DATA
-  // =========================
+  // ==========================================
+  // API BASE URL
+  // ==========================================
+
+  const BASE_URL = API_URL.replace(/\/+$/, "");
+
+  // ==========================================
+  // SAFE API FETCH
+  // ==========================================
+
+  const fetchJSON = async (
+    endpoint: string
+  ): Promise<any | null> => {
+    try {
+      const url = `${BASE_URL}${endpoint}`;
+
+      console.log("Fetching:", url);
+
+      const response = await fetch(url, {
+        cache: "no-store",
+      });
+
+      console.log(
+        `${endpoint} status:`,
+        response.status
+      );
+
+      if (!response.ok) {
+        console.error(
+          `API Error ${endpoint}:`,
+          response.status,
+          response.statusText
+        );
+
+        return null;
+      }
+
+      const text = await response.text();
+
+      if (!text) {
+        console.warn(
+          `Empty response from ${endpoint}`
+        );
+
+        return null;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        console.error(
+          `Invalid JSON from ${endpoint}:`,
+          text
+        );
+
+        return null;
+      }
+    } catch (error) {
+      console.error(
+        `Network error ${endpoint}:`,
+        error
+      );
+
+      return null;
+    }
+  };
+
+  // ==========================================
+  // NORMALIZE API DATA
+  // ==========================================
+
+  const extractArray = (
+    response: any
+  ): any[] => {
+    if (!response) return [];
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    if (
+      response.data &&
+      Array.isArray(response.data.data)
+    ) {
+      return response.data.data;
+    }
+
+    if (Array.isArray(response.bookings)) {
+      return response.bookings;
+    }
+
+    if (Array.isArray(response.orders)) {
+      return response.orders;
+    }
+
+    if (Array.isArray(response.contacts)) {
+      return response.contacts;
+    }
+
+    return [];
+  };
+
+  // ==========================================
+  // FETCH DASHBOARD DATA
+  // ==========================================
 
   const fetchAllData = async () => {
     try {
       setLoading(true);
 
-      const [
-        bookingRes,
-        orderRes,
-        contactRes,
-        predictionRes,
-      ] = await Promise.all([
-        fetch(`${API_URL}/bookings`),
-        fetch(`${API_URL}/orders`),
-        fetch(`${API_URL}/contacts`),
-        fetch(`${API_URL}/prediction`),
-      ]);
+      console.log(
+        "===================================="
+      );
 
-      const bookingData = await bookingRes.json();
-      const orderData = await orderRes.json();
-      const contactData = await contactRes.json();
-      const predictionData = await predictionRes.json();
+      console.log(
+        "SMARTCAFE ADMIN DATA FETCH START"
+      );
+
+      console.log(
+        "API URL:",
+        BASE_URL
+      );
+
+      console.log(
+        "===================================="
+      );
+
+      // --------------------------------------
+      // BOOKINGS
+      // --------------------------------------
+
+      const bookingData =
+        await fetchJSON("/bookings");
+
+      const bookingArray =
+        extractArray(bookingData);
+
+      console.log(
+        "Bookings received:",
+        bookingArray.length,
+        bookingArray
+      );
 
       setBookings(
-        Array.isArray(bookingData)
-          ? bookingData
-          : bookingData.data || []
+        bookingArray.map(
+          (booking: any) => ({
+            ...booking,
+
+            seats: Number(
+              booking.seats || 0
+            ),
+          })
+        )
+      );
+
+      // --------------------------------------
+      // ORDERS
+      // --------------------------------------
+
+      const orderData =
+        await fetchJSON("/orders");
+
+      const orderArray =
+        extractArray(orderData);
+
+      console.log(
+        "Orders received:",
+        orderArray.length,
+        orderArray
       );
 
       setOrders(
-        Array.isArray(orderData)
-          ? orderData
-          : orderData.data || []
+        orderArray.map(
+          (order: any) => ({
+            ...order,
+
+            totalAmount: Number(
+              order.totalAmount ||
+                order.total ||
+                order.amount ||
+                0
+            ),
+
+            items: Array.isArray(
+              order.items
+            )
+              ? order.items
+              : [],
+          })
+        )
       );
 
-      setContacts(
-        Array.isArray(contactData)
-          ? contactData
-          : contactData.data || []
+      // --------------------------------------
+      // CONTACTS
+      // --------------------------------------
+
+      const contactData =
+        await fetchJSON("/contacts");
+
+      const contactArray =
+        extractArray(contactData);
+
+      console.log(
+        "Contacts received:",
+        contactArray.length,
+        contactArray
       );
 
-      setPrediction(
-        predictionData.data || predictionData
+      setContacts(contactArray);
+
+      // --------------------------------------
+      // AI PREDICTION
+      // --------------------------------------
+
+      const predictionData =
+        await fetchJSON("/prediction");
+
+      console.log(
+        "Prediction response:",
+        predictionData
       );
 
+      if (predictionData) {
+        const rawPrediction =
+          predictionData.data ||
+          predictionData;
+
+        setPrediction({
+          expectedSeats: Number(
+            rawPrediction.expectedSeats ||
+              0
+          ),
+
+          occupancy: Number(
+            rawPrediction.occupancy ||
+              0
+          ),
+
+          confidence: Number(
+            rawPrediction.confidence ||
+              0
+          ),
+        });
+      } else {
+        console.warn(
+          "Prediction API unavailable. Using default values."
+        );
+
+        setPrediction({
+          expectedSeats: 0,
+          occupancy: 0,
+          confidence: 0,
+        });
+      }
+
+      console.log(
+        "SMARTCAFE ADMIN DATA FETCH COMPLETE"
+      );
     } catch (error) {
-      console.error("Dashboard fetch error:", error);
+      console.error(
+        "Dashboard fetch error:",
+        error
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
+  // ==========================================
   // AUTH + INITIAL LOAD
-  // =========================
+  // ==========================================
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
 
     if (!token) {
       router.push("/login");
@@ -140,65 +361,139 @@ export default function AdminPage() {
     }
 
     fetchAllData();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  // =========================
+  // ==========================================
   // DELETE BOOKING
-  // =========================
+  // ==========================================
 
-  const deleteBooking = async (id: string) => {
-    if (!confirm("Delete this booking?")) return;
+  const deleteBooking = async (
+    id: string
+  ) => {
+    if (
+      !confirm(
+        "Delete this booking?"
+      )
+    ) {
+      return;
+    }
 
     try {
-      await fetch(`${API_URL}/booking/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${BASE_URL}/booking/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-      fetchAllData();
+      if (!response.ok) {
+        throw new Error(
+          `Delete failed: ${response.status}`
+        );
+      }
+
+      await fetchAllData();
     } catch (error) {
-      console.error("Error deleting booking:", error);
+      console.error(
+        "Error deleting booking:",
+        error
+      );
+
+      alert(
+        "Unable to delete booking."
+      );
     }
   };
 
-  // =========================
+  // ==========================================
   // DELETE ORDER
-  // =========================
+  // ==========================================
 
-  const deleteOrder = async (id: string) => {
-    if (!confirm("Delete this order?")) return;
+  const deleteOrder = async (
+    id: string
+  ) => {
+    if (
+      !confirm(
+        "Delete this order?"
+      )
+    ) {
+      return;
+    }
 
     try {
-      await fetch(`${API_URL}/order/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${BASE_URL}/order/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-      fetchAllData();
+      if (!response.ok) {
+        throw new Error(
+          `Delete failed: ${response.status}`
+        );
+      }
+
+      await fetchAllData();
     } catch (error) {
-      console.error("Error deleting order:", error);
+      console.error(
+        "Error deleting order:",
+        error
+      );
+
+      alert(
+        "Unable to delete order."
+      );
     }
   };
 
-  // =========================
+  // ==========================================
   // DELETE CONTACT
-  // =========================
+  // ==========================================
 
-  const deleteContact = async (id: string) => {
-    if (!confirm("Delete this message?")) return;
+  const deleteContact = async (
+    id: string
+  ) => {
+    if (
+      !confirm(
+        "Delete this message?"
+      )
+    ) {
+      return;
+    }
 
     try {
-      await fetch(`${API_URL}/contact/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${BASE_URL}/contact/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-      fetchAllData();
+      if (!response.ok) {
+        throw new Error(
+          `Delete failed: ${response.status}`
+        );
+      }
+
+      await fetchAllData();
     } catch (error) {
-      console.error("Error deleting contact:", error);
+      console.error(
+        "Error deleting contact:",
+        error
+      );
+
+      alert(
+        "Unable to delete message."
+      );
     }
   };
 
-  // =========================
-  // EXPORT BOOKINGS CSV
-  // =========================
+  // ==========================================
+  // EXPORT CSV
+  // ==========================================
 
   const exportCSV = () => {
     const headers = [
@@ -210,141 +505,201 @@ export default function AdminPage() {
       "Seats",
     ];
 
-    const rows = bookings.map((booking) => [
-      booking.name || "",
-      booking.mobile || "",
-      booking.email || "",
-      booking.date || "",
-      booking.time || "",
-      booking.seats || 0,
-    ]);
+    const rows = bookings.map(
+      (booking) => [
+        booking.name || "",
+        booking.mobile || "",
+        booking.email || "",
+        booking.date || "",
+        booking.time || "",
+        booking.seats || 0,
+      ]
+    );
 
     const csv =
       headers.join(",") +
       "\n" +
-      rows.map((row) => row.join(",")).join("\n");
+      rows
+        .map((row) =>
+          row
+            .map((value) =>
+              `"${String(value).replace(
+                /"/g,
+                '""'
+              )}"`
+            )
+            .join(",")
+        )
+        .join("\n");
 
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const blob = new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8;",
+      }
+    );
 
-    saveAs(blob, "smartcafe-bookings.csv");
+    saveAs(
+      blob,
+      "smartcafe-bookings.csv"
+    );
   };
 
-  // =========================
+  // ==========================================
   // LOGOUT
-  // =========================
+  // ==========================================
 
   const logout = () => {
     localStorage.removeItem("token");
     router.push("/login");
   };
 
-  // =========================
+  // ==========================================
   // DASHBOARD STATS
-  // =========================
+  // ==========================================
 
-  const totalBookings = bookings.length;
+  const totalBookings =
+    bookings.length;
 
-  const bookedSeats = bookings.reduce(
-    (sum, booking) =>
-      sum + Number(booking.seats || 0),
-    0
-  );
+  const bookedSeats =
+    bookings.reduce(
+      (sum, booking) =>
+        sum +
+        Number(
+          booking.seats || 0
+        ),
+      0
+    );
 
-  const availableSeats = Math.max(
-    0,
-    50 - bookedSeats
-  );
+  const availableSeats =
+    Math.max(
+      0,
+      TOTAL_SEATS -
+        bookedSeats
+    );
 
-  const revenue = bookedSeats * 100;
+  // Actual order revenue
+  const revenue =
+    orders.reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order.totalAmount || 0
+        ),
+      0
+    );
 
-  const totalOrders = orders.length;
+  const totalOrders =
+    orders.length;
 
-  const messages = contacts.length;
+  const messages =
+    contacts.length;
 
-  // =========================
-  // BOOKING SEARCH + FILTER
-  // =========================
+  // ==========================================
+  // BOOKING SEARCH + DATE FILTER
+  // ==========================================
 
-  const filteredBookings = bookings.filter(
-    (booking) => {
-      const searchText =
-        search.toLowerCase();
+  const filteredBookings =
+    bookings.filter(
+      (booking) => {
+        const searchText =
+          search.toLowerCase();
 
-      const matchesSearch =
-        booking.name
-          ?.toLowerCase()
-          .includes(searchText) ||
-        booking.email
-          ?.toLowerCase()
-          .includes(searchText) ||
-        booking.mobile
-          ?.includes(search);
+        const matchesSearch =
+          booking.name
+            ?.toLowerCase()
+            .includes(
+              searchText
+            ) ||
+          booking.email
+            ?.toLowerCase()
+            .includes(
+              searchText
+            ) ||
+          booking.mobile
+            ?.includes(search);
 
-      const matchesDate =
-        dateFilter === "" ||
-        booking.date?.startsWith(
-          dateFilter
+        const matchesDate =
+          dateFilter === "" ||
+          booking.date?.startsWith(
+            dateFilter
+          );
+
+        return (
+          matchesSearch &&
+          matchesDate
         );
+      }
+    );
 
-      return (
-        matchesSearch &&
-        matchesDate
-      );
-    }
-  );
-
-  // =========================
+  // ==========================================
   // TOP SELLING COFFEE
-  // =========================
+  // ==========================================
 
   const coffeeSales: Record<
     string,
     number
   > = {};
 
-  orders.forEach((order) => {
-    order.items?.forEach((item) => {
-      const quantity =
-        item.quantity || 1;
+  orders.forEach(
+    (order) => {
+      order.items?.forEach(
+        (item) => {
+          const quantity =
+            Number(
+              item.quantity || 1
+            );
 
-      coffeeSales[item.name] =
-        (coffeeSales[item.name] || 0) +
-        quantity;
-    });
-  });
+          coffeeSales[
+            item.name
+          ] =
+            (coffeeSales[
+              item.name
+            ] || 0) +
+            quantity;
+        }
+      );
+    }
+  );
 
   const topSellingCoffee =
-    Object.entries(coffeeSales)
+    Object.entries(
+      coffeeSales
+    )
       .sort(
-        (a, b) => b[1] - a[1]
+        (a, b) =>
+          b[1] - a[1]
       )
       .slice(0, 5);
 
-  // =========================
+  // ==========================================
   // CUSTOMER ANALYTICS
-  // =========================
+  // ==========================================
 
   const customerVisits: Record<
     string,
     number
   > = {};
 
-  bookings.forEach((booking) => {
-    const key =
-      booking.email ||
-      booking.mobile;
+  bookings.forEach(
+    (booking) => {
+      const key =
+        booking.email ||
+        booking.mobile;
 
-    if (key) {
-      customerVisits[key] =
-        (customerVisits[key] || 0) +
-        1;
+      if (key) {
+        customerVisits[key] =
+          (customerVisits[key] ||
+            0) + 1;
+      }
     }
-  });
+  );
 
   const uniqueCustomers =
-    Object.keys(customerVisits).length;
+    Object.keys(
+      customerVisits
+    ).length;
 
   const returningCustomers =
     Object.values(
@@ -354,15 +709,17 @@ export default function AdminPage() {
     ).length;
 
   const mostActiveCustomer =
-    Object.entries(customerVisits)
-      .sort(
-        (a, b) => b[1] - a[1]
-      )[0];
+    Object.entries(
+      customerVisits
+    ).sort(
+      (a, b) =>
+        b[1] - a[1]
+    )[0];
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-zinc-900 to-black text-white p-8">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
 
       <div className="flex flex-col lg:flex-row justify-between items-center gap-5 mb-8">
 
@@ -380,10 +737,21 @@ export default function AdminPage() {
 
           <button
             onClick={fetchAllData}
-            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 transition px-5 py-2 rounded-xl"
+            disabled={loading}
+            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 transition px-5 py-2 rounded-xl"
           >
-            <RefreshCw size={18} />
-            Refresh
+            <RefreshCw
+              size={18}
+              className={
+                loading
+                  ? "animate-spin"
+                  : ""
+              }
+            />
+
+            {loading
+              ? "Loading..."
+              : "Refresh"}
           </button>
 
           <button
@@ -405,63 +773,85 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* ================= LOADING ================= */}
-
       {loading && (
-        <p className="text-yellow-400 mb-6">
-          Loading Dashboard...
-        </p>
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6 text-amber-300">
+          Loading SmartCafe dashboard data...
+        </div>
       )}
 
-      {/* ================= BOOKING CHART ================= */}
+      {/* BOOKING CHART */}
 
       <div className="mb-10">
         <BookingChart />
       </div>
 
-      {/* ================= STATS ================= */}
+      {/* STATS */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-10">
 
         <Card
           title="Bookings"
           value={totalBookings}
-          icon={<CalendarDays size={28} />}
+          icon={
+            <CalendarDays
+              size={28}
+            />
+          }
         />
 
         <Card
           title="Booked Seats"
           value={bookedSeats}
-          icon={<Coffee size={28} />}
+          icon={
+            <Coffee
+              size={28}
+            />
+          }
         />
 
         <Card
           title="Available Seats"
           value={availableSeats}
-          icon={<Users size={28} />}
+          icon={
+            <Users
+              size={28}
+            />
+          }
         />
 
         <Card
           title="Revenue"
           value={`₹${revenue}`}
-          icon={<IndianRupee size={28} />}
+          icon={
+            <IndianRupee
+              size={28}
+            />
+          }
         />
 
         <Card
           title="Orders"
           value={totalOrders}
-          icon={<ShoppingBag size={28} />}
+          icon={
+            <ShoppingBag
+              size={28}
+            />
+          }
         />
 
         <Card
           title="Messages"
           value={messages}
-          icon={<Mail size={28} />}
+          icon={
+            <Mail
+              size={28}
+            />
+          }
         />
 
       </div>
 
-      {/* ================= AI PREDICTION ================= */}
+      {/* AI PREDICTION */}
 
       <div className="bg-zinc-900 rounded-xl p-6 mb-10">
 
@@ -502,9 +892,10 @@ export default function AdminPage() {
           </div>
 
         </div>
+
       </div>
 
-      {/* ================= TOP SELLING COFFEE ================= */}
+      {/* TOP SELLING COFFEE */}
 
       <div className="bg-zinc-900 rounded-xl p-6 mb-10">
 
@@ -512,17 +903,14 @@ export default function AdminPage() {
           ☕ Top Selling Coffee
         </h2>
 
-        {topSellingCoffee.length === 0 ? (
-
+        {topSellingCoffee.length ===
+        0 ? (
           <p className="text-zinc-400">
             No order data available.
           </p>
-
         ) : (
-
           topSellingCoffee.map(
             ([coffee, count]) => (
-
               <div
                 key={coffee}
                 className="mb-5"
@@ -546,7 +934,9 @@ export default function AdminPage() {
                     className="bg-amber-400 h-3 rounded-full transition-all"
                     style={{
                       width: `${Math.min(
-                        Number(count) * 20,
+                        Number(
+                          count
+                        ) * 20,
                         100
                       )}%`,
                     }}
@@ -557,12 +947,11 @@ export default function AdminPage() {
               </div>
             )
           )
-
         )}
 
       </div>
 
-      {/* ================= CUSTOMER ANALYTICS ================= */}
+      {/* CUSTOMER ANALYTICS */}
 
       <div className="grid md:grid-cols-3 gap-6 mb-10">
 
@@ -596,7 +985,7 @@ export default function AdminPage() {
             Most Active Customer
           </h3>
 
-          <p className="text-xl font-bold text-amber-400">
+          <p className="text-xl font-bold text-amber-400 break-all">
 
             {mostActiveCustomer
               ? `${mostActiveCustomer[0]} (${mostActiveCustomer[1]} visits)`
@@ -608,7 +997,7 @@ export default function AdminPage() {
 
       </div>
 
-      {/* ================= SEARCH ================= */}
+      {/* SEARCH */}
 
       <div className="flex flex-col md:flex-row gap-4 mb-8">
 
@@ -617,91 +1006,125 @@ export default function AdminPage() {
           placeholder="🔍 Search by Name, Email or Mobile"
           value={search}
           onChange={(e) =>
-            setSearch(e.target.value)
+            setSearch(
+              e.target.value
+            )
           }
-          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2"
+          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 outline-none focus:border-amber-400"
         />
 
         <input
           type="date"
           value={dateFilter}
           onChange={(e) =>
-            setDateFilter(e.target.value)
+            setDateFilter(
+              e.target.value
+            )
           }
-          className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2"
+          className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 outline-none focus:border-amber-400"
         />
 
       </div>
 
-      {/* ================= BOOKINGS ================= */}
+      {/* BOOKINGS */}
 
       <Table title="Bookings">
 
         <thead className="bg-zinc-900 text-amber-400">
 
           <tr>
-            <th className="p-3">Name</th>
-            <th className="p-3">Mobile</th>
-            <th className="p-3">Email</th>
-            <th className="p-3">Date</th>
-            <th className="p-3">Time</th>
-            <th className="p-3">Seats</th>
-            <th className="p-3">Action</th>
+            <th className="p-3">
+              Name
+            </th>
+
+            <th className="p-3">
+              Mobile
+            </th>
+
+            <th className="p-3">
+              Email
+            </th>
+
+            <th className="p-3">
+              Date
+            </th>
+
+            <th className="p-3">
+              Time
+            </th>
+
+            <th className="p-3">
+              Seats
+            </th>
+
+            <th className="p-3">
+              Action
+            </th>
           </tr>
 
         </thead>
 
         <tbody>
 
-          {filteredBookings.map(
-            (booking) => (
-
-              <tr
-                key={booking._id}
-                className="border-t border-zinc-700 text-center hover:bg-zinc-800"
+          {filteredBookings.length ===
+          0 ? (
+            <tr>
+              <td
+                colSpan={7}
+                className="p-6 text-center text-zinc-500"
               >
+                No bookings found.
+              </td>
+            </tr>
+          ) : (
+            filteredBookings.map(
+              (booking) => (
+                <tr
+                  key={booking._id}
+                  className="border-t border-zinc-700 text-center hover:bg-zinc-800"
+                >
 
-                <td className="p-3">
-                  {booking.name}
-                </td>
+                  <td className="p-3">
+                    {booking.name}
+                  </td>
 
-                <td className="p-3">
-                  {booking.mobile}
-                </td>
+                  <td className="p-3">
+                    {booking.mobile}
+                  </td>
 
-                <td className="p-3">
-                  {booking.email}
-                </td>
+                  <td className="p-3">
+                    {booking.email}
+                  </td>
 
-                <td className="p-3">
-                  {booking.date}
-                </td>
+                  <td className="p-3">
+                    {booking.date}
+                  </td>
 
-                <td className="p-3">
-                  {booking.time}
-                </td>
+                  <td className="p-3">
+                    {booking.time}
+                  </td>
 
-                <td className="p-3">
-                  {booking.seats}
-                </td>
+                  <td className="p-3">
+                    {booking.seats}
+                  </td>
 
-                <td className="p-3">
+                  <td className="p-3">
 
-                  <button
-                    onClick={() =>
-                      deleteBooking(
-                        booking._id
-                      )
-                    }
-                    className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
-                  >
-                    Delete
-                  </button>
+                    <button
+                      onClick={() =>
+                        deleteBooking(
+                          booking._id
+                        )
+                      }
+                      className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                    >
+                      Delete
+                    </button>
 
-                </td>
+                  </td>
 
-              </tr>
-
+                </tr>
+              )
             )
           )}
 
@@ -709,129 +1132,186 @@ export default function AdminPage() {
 
       </Table>
 
-      {/* ================= ORDERS ================= */}
+      {/* ORDERS */}
 
       <Table title="Orders">
 
         <thead className="bg-zinc-900 text-amber-400">
 
           <tr>
-            <th className="p-3">Customer</th>
-            <th className="p-3">Mobile</th>
-            <th className="p-3">Items</th>
-            <th className="p-3">Amount</th>
-            <th className="p-3">Action</th>
+            <th className="p-3">
+              Customer
+            </th>
+
+            <th className="p-3">
+              Mobile
+            </th>
+
+            <th className="p-3">
+              Items
+            </th>
+
+            <th className="p-3">
+              Amount
+            </th>
+
+            <th className="p-3">
+              Action
+            </th>
           </tr>
 
         </thead>
 
         <tbody>
 
-          {orders.map((order) => (
-
-            <tr
-              key={order._id}
-              className="border-t border-zinc-700 text-center hover:bg-zinc-800"
-            >
-
-              <td className="p-3">
-                {order.customerName}
+          {orders.length === 0 ? (
+            <tr>
+              <td
+                colSpan={5}
+                className="p-6 text-center text-zinc-500"
+              >
+                No orders found.
               </td>
-
-              <td className="p-3">
-                {order.mobile}
-              </td>
-
-              <td className="p-3">
-                {order.items
-                  ?.map(
-                    (item) =>
-                      `${item.name} x${item.quantity || 1}`
-                  )
-                  .join(", ")}
-              </td>
-
-              <td className="p-3">
-                ₹{order.totalAmount}
-              </td>
-
-              <td className="p-3">
-
-                <button
-                  onClick={() =>
-                    deleteOrder(
-                      order._id
-                    )
-                  }
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
-                >
-                  Delete
-                </button>
-
-              </td>
-
             </tr>
+          ) : (
+            orders.map(
+              (order) => (
+                <tr
+                  key={order._id}
+                  className="border-t border-zinc-700 text-center hover:bg-zinc-800"
+                >
 
-          ))}
+                  <td className="p-3">
+                    {order.customerName ||
+                      "N/A"}
+                  </td>
+
+                  <td className="p-3">
+                    {order.mobile ||
+                      "N/A"}
+                  </td>
+
+                  <td className="p-3">
+                    {order.items
+                      ?.map(
+                        (item) =>
+                          `${item.name} x${
+                            item.quantity ||
+                            1
+                          }`
+                      )
+                      .join(", ") ||
+                      "N/A"}
+                  </td>
+
+                  <td className="p-3">
+                    ₹
+                    {Number(
+                      order.totalAmount ||
+                        0
+                    )}
+                  </td>
+
+                  <td className="p-3">
+
+                    <button
+                      onClick={() =>
+                        deleteOrder(
+                          order._id
+                        )
+                      }
+                      className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+
+                  </td>
+
+                </tr>
+              )
+            )
+          )}
 
         </tbody>
 
       </Table>
 
-      {/* ================= CONTACTS ================= */}
+      {/* CONTACTS */}
 
       <Table title="Contact Messages">
 
         <thead className="bg-zinc-900 text-amber-400">
 
           <tr>
-            <th className="p-3">Name</th>
-            <th className="p-3">Email</th>
-            <th className="p-3">Message</th>
-            <th className="p-3">Action</th>
+            <th className="p-3">
+              Name
+            </th>
+
+            <th className="p-3">
+              Email
+            </th>
+
+            <th className="p-3">
+              Message
+            </th>
+
+            <th className="p-3">
+              Action
+            </th>
           </tr>
 
         </thead>
 
         <tbody>
 
-          {contacts.map((contact) => (
-
-            <tr
-              key={contact._id}
-              className="border-t border-zinc-700 text-center hover:bg-zinc-800"
-            >
-
-              <td className="p-3">
-                {contact.name}
+          {contacts.length === 0 ? (
+            <tr>
+              <td
+                colSpan={4}
+                className="p-6 text-center text-zinc-500"
+              >
+                No contact messages found.
               </td>
-
-              <td className="p-3">
-                {contact.email}
-              </td>
-
-              <td className="p-3 max-w-sm break-words">
-                {contact.message}
-              </td>
-
-              <td className="p-3">
-
-                <button
-                  onClick={() =>
-                    deleteContact(
-                      contact._id
-                    )
-                  }
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
-                >
-                  Delete
-                </button>
-
-              </td>
-
             </tr>
+          ) : (
+            contacts.map(
+              (contact) => (
+                <tr
+                  key={contact._id}
+                  className="border-t border-zinc-700 text-center hover:bg-zinc-800"
+                >
 
-          ))}
+                  <td className="p-3">
+                    {contact.name}
+                  </td>
+
+                  <td className="p-3">
+                    {contact.email}
+                  </td>
+
+                  <td className="p-3 max-w-sm break-words">
+                    {contact.message}
+                  </td>
+
+                  <td className="p-3">
+
+                    <button
+                      onClick={() =>
+                        deleteContact(
+                          contact._id
+                        )
+                      }
+                      className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+
+                  </td>
+
+                </tr>
+              )
+            )
+          )}
 
         </tbody>
 
@@ -841,9 +1321,9 @@ export default function AdminPage() {
   );
 }
 
-// =========================
-// CARD COMPONENT
-// =========================
+// ==========================================
+// CARD
+// ==========================================
 
 function Card({
   title,
@@ -896,9 +1376,9 @@ function Card({
   );
 }
 
-// =========================
-// TABLE COMPONENT
-// =========================
+// ==========================================
+// TABLE
+// ==========================================
 
 function Table({
   title,
