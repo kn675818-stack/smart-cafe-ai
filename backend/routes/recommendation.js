@@ -103,7 +103,8 @@ DO NOT:
       ],
 
       temperature: 0.3,
-      max_completion_tokens: 500,
+   max_completion_tokens: 500,
+   reasoning_effort: "low",
     });
 
  
