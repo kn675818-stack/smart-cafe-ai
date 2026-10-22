@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -37,25 +36,27 @@ export default function CoffeeRecommendation() {
 
       const data = await response.json();
 
+      // Invalid/non-menu input:
+      // Keep the UI completely blank.
       if (!response.ok || !data.success) {
-        throw new Error(
-          data.recommendation || "AI recommendation unavailable."
-        );
+        setRecommendation("");
+        setError("");
+        return;
       }
 
       if (!data.recommendation) {
-        throw new Error("No recommendations received. Please try again.");
+        setRecommendation("");
+        setError("");
+        return;
       }
 
       setRecommendation(data.recommendation);
+      setError("");
     } catch (err) {
       console.error("Recommendation error:", err);
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to connect to SmartCafe AI. Please try again."
-      );
+      setRecommendation("");
+      setError("");
     } finally {
       setLoading(false);
     }
@@ -104,6 +105,7 @@ export default function CoffeeRecommendation() {
           <h3 className="text-lg font-semibold text-amber-400 mb-3">
             Recommended For You
           </h3>
+
           <p className="text-xl text-amber-300">
             {recommendation}
           </p>

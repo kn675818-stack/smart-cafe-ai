@@ -20,6 +20,48 @@ const MENU = [
   "Vanilla Shake",
 ];
 
+// Words/phrases that indicate a drink-related request.
+// English + Hindi + Hinglish support.
+const DRINK_KEYWORDS = [
+  "coffee",
+  "cafe",
+  "café",
+  "cappuccino",
+  "latte",
+  "espresso",
+  "mocha",
+  "chocolate",
+  "frappe",
+  "oreo",
+  "shake",
+  "mango",
+  "smoothie",
+  "vanilla",
+  "drink",
+  "beverage",
+  "cold",
+  "hot",
+  "iced",
+  "ice",
+  "chilled",
+  "thandi",
+  "thanda",
+  "garam",
+  "meethi",
+  "meetha",
+  "sweet",
+  "strong",
+  "refreshing",
+  "fruity",
+  "coffee",
+  "peena",
+  "pina",
+  "pi",
+  "chahiye",
+  "chahta",
+  "chahti",
+];
+
 router.post("/", async (req, res) => {
   try {
     const { mood } = req.body;
@@ -27,13 +69,31 @@ router.post("/", async (req, res) => {
     if (!mood || typeof mood !== "string" || !mood.trim()) {
       return res.status(400).json({
         success: false,
-        recommendation: "Please enter your drink preference.",
+        recommendation: "",
       });
     }
 
     const userInput = mood.trim();
 
     console.log("User input:", userInput);
+
+    // Check whether the request is related to drinks.
+    const normalizedInput = userInput.toLowerCase();
+
+    const isDrinkRelated = DRINK_KEYWORDS.some((keyword) =>
+      normalizedInput.includes(keyword)
+    );
+
+    // If the user searches for something unrelated,
+    // return nothing instead of generating random recommendations.
+    if (!isDrinkRelated) {
+      console.log("Invalid/non-drink input:", userInput);
+
+      return res.json({
+        success: false,
+        recommendation: "",
+      });
+    }
 
     const completion = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
@@ -78,7 +138,6 @@ IMPORTANT:
 - If the user asks for a sweet drink, prioritize Vanilla Shake, Chocolate Frappe or Oreo Shake.
 - If the user asks for something refreshing, prioritize Cold Coffee or Mango Smoothie.
 - If the request contains conflicting preferences, choose the closest possible options from the menu.
-- If the request is vague or unrelated to drinks, still recommend exactly 3 drinks from the menu.
 
 OUTPUT FORMAT:
 Return ONLY the 3 menu drink names separated by commas.
@@ -103,11 +162,9 @@ DO NOT:
       ],
 
       temperature: 0.3,
-   max_completion_tokens: 500,
-   reasoning_effort: "low",
+      max_completion_tokens: 500,
+      reasoning_effort: "low",
     });
-
- 
 
     const recommendation =
       completion.choices?.[0]?.message?.content?.trim();
@@ -117,7 +174,7 @@ DO NOT:
     if (!recommendation) {
       return res.status(500).json({
         success: false,
-        recommendation: "AI recommendation unavailable",
+        recommendation: "",
       });
     }
 
@@ -130,7 +187,7 @@ DO NOT:
 
     res.status(500).json({
       success: false,
-      recommendation: "AI recommendation unavailable",
+      recommendation: "",
     });
   }
 });
